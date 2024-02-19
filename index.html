@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verificação de Acesso NFT</title>
+    <title>Documentos PCGO</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/web3@1.3.0/dist/web3.min.js"></script>
     <style>
@@ -103,7 +103,7 @@ button {
     <div id="content">
         <h2>Conteúdo Protegido</h2>
         <ul>
-            <li><a href="https://www.blocksherlock.com" target="_blank" rel="noopener noreferrer">Blocksherlock</a></li>
+            <li><a href="link1.html" target="_blank" rel="noopener noreferrer">Link 1</a></li>
             <li><a href="link2.html" target="_blank" rel="noopener noreferrer">Link 2</a></li>
             <li><a href="link3.html" target="_blank" rel="noopener noreferrer">Link 3</a></li>
         </ul>
@@ -649,43 +649,69 @@ button {
             });
         }
 
-        async function connectWallet() {
-            if (typeof window.ethereum !== 'undefined') {
-                try {
-                    const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-                    userAccount = accounts[0];
-                    document.getElementById('walletAddress').innerText = `${userAccount.slice(0, 6)}...${userAccount.slice(-4)}`;
-                    document.getElementById('walletAddress').style.display = 'block';
-                    document.getElementById('requestAccess').style.display = 'inline-block';
-                } catch (error) {
-                    console.error('Error connecting to MetaMask', error);
-                }
-            } else {
-                alert('Please install MetaMask or another Ethereum wallet.');
-            }
-        }
-
-        async function requestAccess() {
-            if (!web3) {
-                web3 = new Web3(window.ethereum);
-            }
-            myContract = new web3.eth.Contract(contractABI, contractAddress);
+       async function connectWallet() {
+        if (typeof window.ethereum !== 'undefined') {
             try {
-                const balance = await myContract.methods.balanceOf(userAccount, 1).call();
-                if (parseInt(balance, 10) > 0) {
-                    document.getElementById('accessStatus').innerText = 'Acesso Permitido';
-                    document.getElementById('content').style.display = 'block';
-                } else {
-                    document.getElementById('accessStatus').innerText = 'Acesso Negado';
-                }
+                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                userAccount = accounts[0];
+                document.getElementById('walletAddress').innerText = `${userAccount.slice(0, 6)}...${userAccount.slice(-4)}`;
+                document.getElementById('walletAddress').style.display = 'block';
+                document.getElementById('requestAccess').style.display = 'inline-block';
             } catch (error) {
-                console.error('Error requesting access', error);
+                console.error('Error connecting to MetaMask', error);
             }
+        } else {
+            alert('Please install MetaMask or another Ethereum wallet.');
         }
+    }
 
-        document.getElementById('connectWallet').addEventListener('click', connectWallet);
-        document.getElementById('requestAccess').addEventListener('click', requestAccess);
-        document.querySelectorAll('button').forEach(addButtonClickEffect);
+    async function requestAccess() {
+        if (!web3) {
+            web3 = new Web3(window.ethereum);
+        }
+        myContract = new web3.eth.Contract(contractABI, contractAddress);
+        try {
+            const balance = await myContract.methods.balanceOf(userAccount, 1).call();
+            if (parseInt(balance, 10) > 0) {
+                // Se o usuário tem o NFT, chame loadProtectedContent para carregar os links
+                loadProtectedContent();
+            } else {
+                document.getElementById('accessStatus').innerText = 'Acesso Negado';
+            }
+        } catch (error) {
+            console.error('Error requesting access', error);
+        }
+    }
+
+    async function loadProtectedContent() {
+        // Implemente a lógica para solicitar os links protegidos do servidor
+        const response = await fetch('/verify-nft-ownership', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ walletAddress: userAccount }),
+        });
+
+        if (response.ok) {
+            const { links } = await response.json();
+            displayLinks(links);
+        } else {
+            document.getElementById('accessStatus').innerText = 'Acesso Negado';
+        }
+    }
+
+    function displayLinks(links) {
+        // Exibe os links dinamicamente na página
+        const contentDiv = document.getElementById('content');
+        contentDiv.innerHTML = '<h2>Conteúdo Protegido</h2><ul>' +
+            links.map(link => `<li><a href="${link.url}" target="_blank" rel="noopener noreferrer">${link.title}</a></li>`).join('') +
+            '</ul>';
+        contentDiv.style.display = 'block';
+    }
+
+    document.getElementById('connectWallet').addEventListener('click', connectWallet);
+    document.getElementById('requestAccess').addEventListener('click', requestAccess);
     </script>
 </body>
 </html>
