@@ -1,27 +1,90 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verificação de Acesso NFT</title>
     <script src="https://cdn.jsdelivr.net/npm/web3@1.3.0/dist/web3.min.js"></script>
     <style>
+        :root {
+            --primary-color: #4caf50;
+            --secondary-color: #ffffff;
+            --accent-color: #2196f3;
+            --background-color: #1a1a1a;
+            --text-color: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Arial', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: var(--secondary-color);
+            border: none;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: var(--primary-color);
+        }
+
         #walletAddress {
-            position: absolute;
-            right: 10px;
-            top: 10px;
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            background-color: var(--primary-color);
+            color: var(--secondary-color);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        #accessStatus {
+            margin-top: 20px;
+        }
+
+        #content {
+            margin-top: 20px;
+            display: none;
+        }
+
+        #content h2 {
+            color: var(--accent-color);
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        ul li a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        ul li a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
     <button id="connectWallet">Conectar Carteira</button>
-    <div id="walletAddress"></div>
+    <div id="walletAddress" style="display:none;"></div>
     <button id="requestAccess" style="display:none;">Solicitar Acesso</button>
     <div id="accessStatus"></div>
-    <div id="content" style="display:none;">
+    <div id="content">
         <h2>Conteúdo Protegido</h2>
         <ul>
-        <li><a href="link1.html" target="_blank" rel="noopener noreferrer">Link 1</a></li>
-	<li><a href="link2.html" target="_blank" rel="noopener noreferrer">Link 2</a></li>
-	<li><a href="link3.html" target="_blank" rel="noopener noreferrer">Link 3</a></li>
+            <li><a href="link1.html" target="_blank" rel="noopener noreferrer">Link 1</a></li>
+            <li><a href="link2.html" target="_blank" rel="noopener noreferrer">Link 2</a></li>
+            <li><a href="link3.html" target="_blank" rel="noopener noreferrer">Link 3</a></li>
         </ul>
     </div>
     <script>
@@ -550,36 +613,48 @@
 		"stateMutability": "view",
 		"type": "function"
 	}
-]; // Substitua [] pelo ABI do seu contrato
-        const contractAddress = '0x1009306D5718B5Eebc9cA44086e63521B5f7C75b'; // Substitua '' pelo endereço do seu contrato
-        const tokenID = 1; // O ID do NFT
+]; // Sua ABI aqui
+        const contractAddress = '0x1009306D5718B5Eebc9cA44086e63521B5f7C75b'; // Endereço do contrato
         let web3;
         let myContract;
         let userAccount;
 
-        // Checa se o Web3 foi injetado pelo navegador (ex: MetaMask)
-        if (typeof window.ethereum !== 'undefined') {
-            console.log('MetaMask is installed!');
-            web3 = new Web3(window.ethereum);
-            myContract = new web3.eth.Contract(contractABI, contractAddress);
+        async function connectWallet() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                    userAccount = accounts[0];
+                    document.getElementById('walletAddress').innerText = `${userAccount.slice(0, 6)}...${userAccount.slice(-4)}`;
+                    document.getElementById('walletAddress').style.display = 'block';
+                    document.getElementById('requestAccess').style.display = 'inline-block';
+                } catch (error) {
+                    console.error('Error connecting to MetaMask', error);
+                }
+            } else {
+                alert('Please install MetaMask or another Ethereum wallet.');
+            }
         }
 
-        document.getElementById('connectWallet').addEventListener('click', async function() {
-            const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-            userAccount = accounts[0];
-            document.getElementById('walletAddress').innerText = `${userAccount.slice(0, 6)}...${userAccount.slice(-4)}`;
-            document.getElementById('requestAccess').style.display = 'block';
-        });
-
-        document.getElementById('requestAccess').addEventListener('click', async function() {
-            const balance = await myContract.methods.balanceOf(userAccount, tokenID).call();
-            if(balance > 0) {
-                document.getElementById('accessStatus').innerText = 'Acesso Permitido';
-                document.getElementById('content').style.display = 'block';
-            } else {
-                document.getElementById('accessStatus').innerText = 'Acesso Negado';
+        async function requestAccess() {
+            if (!web3) {
+                web3 = new Web3(window.ethereum);
             }
-        });
+            myContract = new web3.eth.Contract(contractABI, contractAddress);
+            try {
+                const balance = await myContract.methods.balanceOf(userAccount, 1).call();
+                if (parseInt(balance, 10) > 0) {
+                    document.getElementById('accessStatus').innerText = 'Acesso Permitido';
+                    document.getElementById('content').style.display = 'block';
+                } else {
+                    document.getElementById('accessStatus').innerText = 'Acesso Negado';
+                }
+            } catch (error) {
+                console.error('Error requesting access', error);
+            }
+        }
+
+        document.getElementById('connectWallet').addEventListener('click', connectWallet);
+        document.getElementById('requestAccess').addEventListener('click', requestAccess);
     </script>
 </body>
 </html>
